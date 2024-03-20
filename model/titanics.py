@@ -6,6 +6,8 @@ from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
 import seaborn as sns
 import numpy as np
+import pdb
+import ast
 
 # Define the TitanicRegression global variable
 titanic_regression = None
@@ -32,10 +34,10 @@ class TitanicRegression:
         self.td['alone'] = self.td['alone'].apply(lambda x: 1 if x == True else 0)
 
         # Encode categorical variables
-        self.enc = OneHotEncoder(handle_unknown='ignore')
-        self.enc.fit(self.td[['embarked']])
-        self.onehot = self.enc.transform(self.td[['embarked']]).toarray()
-        cols = ['embarked_' + val for val in self.enc.categories_[0]]
+        self.encoder = OneHotEncoder(handle_unknown='ignore')
+        self.encoder.fit(self.td[['embarked']])
+        self.onehot = self.encoder.transform(self.td[['embarked']]).toarray()
+        cols = ['embarked_' + val for val in self.encoder.categories_[0]]
         self.td[cols] = pd.DataFrame(self.onehot)
         self.td.drop(['embarked'], axis=1, inplace=True)
         self.td.dropna(inplace=True)
@@ -61,40 +63,51 @@ class TitanicRegression:
         self.logreg = LogisticRegression()
         self.logreg.fit(self.X_train, self.y_train)
         
-    def predictSurvival(self, data):
-        passenger = data.get("passenger")
-        new_passenger = {
-            'name': passenger.get('name'),
-            'pclass': passenger.get('pclass'),
-            'sex': passenger.get('sex'),
-            'age': passenger.get('age'),
-            'sibsp': passenger.get('sibsp'),
-            'parch': passenger.get('parch'),
-            'fare': passenger.get('fare'),
-            'embarked': passenger.get('embarked'),
-            'alone': passenger.get('alone')
-        }
+    def predictSurvival(self, passenger):
+        X = self.td.drop('survived', axis=1) # all except 'survived'
+        y = self.td['survived'] # only 'survived'
+        self.X_train, X_test, self.y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+                
+        self.logreg = LogisticRegression()
+        self.logreg.fit(self.X_train, self.y_train)
+        
+        passenger = passenger['passenger']
+        passenger = list(passenger.values())
+        
+        passenger = pd.DataFrame({
+            'name': [passenger[0]],
+            'pclass': [passenger[1]],
+            'sex': [passenger[2]],
+            'age': [passenger[3]],
+            'sibsp': [passenger[4]],
+            'parch': [passenger[5]],
+            'fare': [passenger[6]],
+            'embarked': [passenger[7]],
+            'alone': [passenger[8]]
+        })
+        
+        passenger['sex'] = passenger['sex'].apply(lambda x: 1 if x == 'male' else 0)
+        passenger['alone'] = passenger['alone'].apply(lambda x: 1 if x == True else 0)
+        onehot = self.encoder.transform(passenger[['embarked']])
+        cols = ['embarked_' + val for val in self.encoder.categories_[0]]
+        print(passenger)
+        passenger[cols] = pd.DataFrame(onehot.toarray(), index=passenger.index)
+        passenger.drop(['name'], axis=1, inplace=True)
+        passenger.drop(['embarked'], axis=1, inplace=True)
+        
+        print(passenger)
+        # passenger_list = list(passenger["passenger"].values())
 
-        # Preprocess the new passenger data
-        new_passenger['sex'] = 1 if new_passenger['sex'] == 'male' else 0
-        new_passenger['alone'] = 1 if new_passenger['alone'] else 0
-
-        # Encode 'embarked' variable
-        embarked_value = new_passenger['embarked']
-        embarked_encoded = self.enc.transform(np.array([embarked_value]).reshape(1, -1))
-        print(new_passenger)
-
-        cols = ['embarked_' + val for val in self.enc.categories_[0]]
-        print(new_passenger)
-        new_passenger.update({col: value for col, value in zip(cols, embarked_encoded.toarray()[0])})
-
-        # Drop unnecessary columns
-        new_passenger_df = pd.DataFrame(new_passenger)
-        new_passenger_df.drop(['name', 'embarked'], axis=1, inplace=True)
-
-        aliveProb = self.logreg.predict_proba(new_passenger_df)[:, 1]
-
-        return aliveProb
+        # passenger = np.asarray(passenger_list).reshape(1, -1)
+        # #preprocessing
+    
+        aliveProb = np.squeeze(self.logreg.predict_proba(passenger))
+        print(aliveProb)
+        aliveProb.tolist()
+        deathProb = aliveProb[0]
+        aliveProb = aliveProb[1]
+        
+        return 'Survival probability: {:.2%}'.format(aliveProb),('Death probability: {:.2%}'.format(deathProb))  
 
 
 def initTitanic():
