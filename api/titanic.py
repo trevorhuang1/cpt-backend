@@ -18,6 +18,6 @@ class TitanicApi:
             data = request.get_json()
             # print(data)
             alive_prob = titanic_model.predictSurvival(data)
-            return jsonify({'survival_probability': alive_prob})
+            return jsonify(alive_prob)
 
     api.add_resource(_CRUD, '/')
