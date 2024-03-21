@@ -70,6 +70,7 @@ app.cli.add_command(custom_cli)
 def activate_job():
     initUsers()
     initBakings()
+    initTitanic()
         
 # this runs the application on the development server
 if __name__ == "__main__":
