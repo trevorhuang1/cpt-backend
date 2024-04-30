@@ -11,10 +11,12 @@ user_api = Blueprint('user_api', __name__,
 
 # API docs https://flask-restful.readthedocs.io/en/latest/api.html
 api = Api(user_api)
-
-# Lines 16 - 155 were written by my teammates using teacher provided code
+# Acknowledgements: This was a collaborative project that could not have been completed
+# without the help of teacher provided code and the help of my teammates
+# Lines 20 - 157 were written by my teammates using teacher provided code
 # The _friendRequest and _send classes were written by me
-# The lines 16 - 155 are the most relevent to the feature shown in the CPT video
+# The lines 157 - 230  are the most relevent to the feature shown in the CPT video and are
+# completely done by me.
 class UserAPI:        
     class _CRUD(Resource):  # User API operation for Create, Read.  THe Update, Delete methods need to be implemeented
         def post(self): # Create method
