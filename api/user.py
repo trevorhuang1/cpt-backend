@@ -12,6 +12,9 @@ user_api = Blueprint('user_api', __name__,
 # API docs https://flask-restful.readthedocs.io/en/latest/api.html
 api = Api(user_api)
 
+# Lines 16 - 155 were written by my teammates using teacher provided code
+# The _friendRequest and _send classes were written by me
+# The lines 16 - 155 are the most relevent to the feature shown in the CPT video
 class UserAPI:        
     class _CRUD(Resource):  # User API operation for Create, Read.  THe Update, Delete methods need to be implemeented
         def post(self): # Create method
@@ -148,53 +151,75 @@ class UserAPI:
                         "data": None
                 }, 500
     
+    # Class for sending an item
     class _Send(Resource):
         def post(self):
+            # Getting the body of the request
             body = request.get_json()
+            # Uid of the receiver and item to be sent
             uid = body.get('uid')
             item = body.get('items')
+            # Getting all the users in a list
             users = User.query.all()
+            # Iterating through the list to find if the receiver is in it
             for user in users:
                 if user.uid == uid:
+                    # JSON to list so that it can be appended with the new item
                     user.items = json.loads(user.items)
                     user.items.append(item)
+                    # Converting the list back into JSON so that the database can be updated
                     user.items = json.dumps(user.items)
                     db.session.commit() 
                     return(f"you just gave {user.name} an item")
 
+    # Class for accepting friend requests
     class _Friendrq(Resource):
         def post(self):
             body = request.get_json()
             users = User.query.all()
             sender = body.get('sender')
             receiver = body.get('receiver')
+            # Checking for if the user is trying to send themselves a friend request
             if sender == receiver:
                 return {"message": "Cannot send friend request to yourself"}, 400
+            # Iterating through the list of users to find the receiver of the friend request
             for user in users:
                 if user.uid == receiver:
                     user.friendrq = json.loads(user.friendrq)
+                    # Checking if they have already sent a friend request to the receiver
                     if sender in user.friendrq:
                         return "Friend request already sent", 400
+                    # Checking for if they are already friends
                     if sender in user.friends:
                         return "Already friends", 400
+                    # Appending the sender to the receiver's friend request list
                     user.friendrq.append(sender)
+                    # Converting to JSON then committing the change to be stored in the database
                     user.friendrq = json.dumps(user.friendrq)
                     db.session.commit() 
                     return(f"You sent a friend request to {user.name}")
         def delete(self):
+            # Getting the body of the request
             body = request.get_json()
+            # Getting the action (accept/reject), the sender of the friend request, and the receiver
             action = body.get('action')
             sender = body.get('sender')
             receiver = body.get('receiver')
+            # Iterating through all of the users to find the receiver
             users = User.query.all()
             for user in users:
                 if user.uid == receiver:
-                    user.friendrq = user.friendrq = json.loads(user.friendrq)
+                    # Convert JSON string to list
+                    user.friendrq = json.loads(user.friendrq)
+                    # If the sender is not one of the receiver's friends return an error
                     if sender not in user.friendrq:
                         return "Sender is not in the friend request list", 400
+                    # Otherwise remove the sender from the user's friend requests, because they have accepted/rejected the request
                     user.friendrq.remove(sender)
+                    # Convert the string back to JSON to be committed to the database
                     user.friendrq = json.dumps(user.friendrq)
                     db.session.commit()
+                    # If they decided to accept then append to their friends list
                     if action == "accepted":
                         user.friends = json.loads(user.friends)
                         user.friends.append(sender)
@@ -202,7 +227,9 @@ class UserAPI:
                         db.session.commit()
                         return(f"You accepted {sender}'s friend request")
                     else:
+                        # Otherwise then return that the friend request was denied
                         return(f"You denied {sender}'s friend request")
+                ## Add to the friends list of the sender as well so they are mutually friended
                 if user.uid == sender:
                     user.friends = json.loads(user.friends)
                     user.friends.append(receiver)
